@@ -20,8 +20,7 @@ internal class Program
         builder.Services.AddSwaggerGen();
 
 
-
-        builder.Services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase("NotesDB") );
+        builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
         
 
         builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
