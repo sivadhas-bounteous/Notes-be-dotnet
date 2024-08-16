@@ -44,11 +44,14 @@ namespace Notes.Controllers
             if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
             {
 
+
+                Console.WriteLine("userId in login - "+ user.Id);
                 var authClaims = new List<Claim>
                 {
-                    new Claim(JwtRegisteredClaimNames.Sub, user.UserName!),
+                    
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new Claim(ClaimTypes.Role, user.Role)
+                    new Claim(ClaimTypes.Role, user.Role),
+                    new Claim(ClaimTypes.NameIdentifier, user.Id)
                 };
 
                 var token = new JwtSecurityToken(

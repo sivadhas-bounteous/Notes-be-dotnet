@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Notes.Data;
 using Notes.Models;
+using Notes.Mapping; // Ensure to include this namespace for AutoMapper profiles
 using System.Text;
 
 internal class Program
@@ -13,16 +14,17 @@ internal class Program
         var builder = WebApplication.CreateBuilder(args);
 
         // Add services to the container.
-
         builder.Services.AddControllers();
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+        
+        // Configure Swagger/OpenAPI
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
+        // Configure DbContext
+        builder.Services.AddDbContext<AppDbContext>(options => 
+            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-        builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-        
-
+        // Configure Identity
         builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
         {
             options.Password.RequiredLength = 6;
@@ -31,11 +33,10 @@ internal class Program
             options.Password.RequireUppercase = false;
             options.Password.RequireLowercase = false;
         })
-            .AddEntityFrameworkStores<AppDbContext>()
-            .AddDefaultTokenProviders();
+        .AddEntityFrameworkStores<AppDbContext>()
+        .AddDefaultTokenProviders();
 
-
-
+        // Configure Authentication
         builder.Services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -55,11 +56,15 @@ internal class Program
             };
         });
 
+        // Configure Authorization Policies
         builder.Services.AddAuthorization(options =>
         {
             options.AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
             options.AddPolicy("UserPolicy", policy => policy.RequireRole("User"));
         });
+
+        // Configure AutoMapper
+        builder.Services.AddAutoMapper(typeof(NoteProfile)); // Register your AutoMapper profiles here
 
         var app = builder.Build();
 

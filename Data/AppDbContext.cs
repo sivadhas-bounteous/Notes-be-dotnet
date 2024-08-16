@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Notes.Models;
 
@@ -10,5 +9,6 @@ namespace Notes.Data
         public AppDbContext(DbContextOptions options) : base(options)
         {
         }
+        public DbSet<Note> Notes { get; set; }
     }
 }
