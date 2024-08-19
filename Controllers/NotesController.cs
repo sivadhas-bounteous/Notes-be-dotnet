@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Notes.Data;
 using Notes.DTO;
 using Notes.Models;
+using Serilog;
 using System.Security.Claims;
 
 
@@ -17,17 +18,22 @@ namespace Notes.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IMapper _mapper;
+        private readonly Serilog.ILogger _logger;
 
-        public NotesController(AppDbContext context, IMapper mapper)
+        public NotesController(AppDbContext context, IMapper mapper, Serilog.ILogger logger)
         {
             _context = context;
             _mapper = mapper;
+            _logger = logger;
         }
 
         // GET: api/notes
         [HttpGet]
         public async Task<ActionResult<IEnumerable<NoteResponse>>> GetAllNotes()
         {
+            
+
+            _logger.ForContext("DBSTORE", "true").Information("GETALL /notes called at {Time}", DateTime.UtcNow);
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var isAdmin = User.IsInRole("Admin");
 
@@ -44,6 +50,7 @@ namespace Notes.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<NoteResponse>> GetNote(int id)
         {
+            _logger.ForContext("DBSTORE", "true").Information("GET /notes/{id} called at {Time} by {username}",id, DateTime.UtcNow, User.Identity!.Name);
             var note = await _context.Notes.FindAsync(id);
 
             if (note == null)
@@ -68,6 +75,7 @@ namespace Notes.Controllers
         [HttpPost]
         public async Task<ActionResult<NoteResponse>> PostNote([FromBody] NoteInput noteInput)
         {
+            _logger.ForContext("DBSTORE", "true").Information("POST /notes called at {Time} by {username}", DateTime.UtcNow, User.Identity!.Name);
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -92,6 +100,7 @@ namespace Notes.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> EditNote(int id, [FromBody] NoteInput noteInput)
         {
+            _logger.ForContext("DBSTORE", "true").Information("PUT /notes/{id} called at {Time} by {username}",id, DateTime.UtcNow, User.Identity!.Name);
             var existingNote = await _context.Notes.FindAsync(id);
             if (existingNote == null)
             {
@@ -119,6 +128,7 @@ namespace Notes.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteNote(int id)
         {
+            _logger.ForContext("DBSTORE", "true").Information("DELETE /notes/{id} called at {Time} by {username}",id, DateTime.UtcNow, User.Identity!.Name);
             var note = await _context.Notes.FindAsync(id);
             if (note == null)
             {

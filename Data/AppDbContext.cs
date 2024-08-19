@@ -10,5 +10,6 @@ namespace Notes.Data
         {
         }
         public DbSet<Note> Notes { get; set; }
+
     }
 }

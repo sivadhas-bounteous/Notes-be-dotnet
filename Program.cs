@@ -6,12 +6,35 @@ using Notes.Data;
 using Notes.Models;
 using Notes.Mapping; // Ensure to include this namespace for AutoMapper profiles
 using System.Text;
+using System.Net;
+using Microsoft.AspNetCore.Diagnostics;
+using Serilog;
+
 
 internal class Program
 {
     private static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+        builder.Host.UseSerilog((context, services, configuration) =>
+        {
+            configuration
+                .WriteTo.Console() // Log to the console
+                .WriteTo.Logger(lc => lc
+                    .Filter.ByIncludingOnly(e => e.Properties.ContainsKey("DBSTORE") && e.Properties["DBSTORE"].ToString() == "\"true\"") // Filter for custom property
+                    .WriteTo.PostgreSQL(
+                        connectionString,
+                        tableName: "logs",
+                        needAutoCreateTable: true, // Automatically create the Logs table if it doesn't exist
+                        columnOptions: null // Customize columns if needed
+                    )
+                );
+                
+                 // Set minimum log level to Information
+        });
+
 
         // Add services to the container.
         builder.Services.AddControllers();
@@ -22,7 +45,7 @@ internal class Program
 
         // Configure DbContext
         builder.Services.AddDbContext<AppDbContext>(options => 
-            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+            options.UseNpgsql(connectionString));
 
         // Configure Identity
         builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -75,6 +98,18 @@ internal class Program
             app.UseSwaggerUI();
         }
 
+        app.UseExceptionHandler(options =>
+        {
+            options.Run(async context =>
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                var ex = context.Features.Get<IExceptionHandlerFeature>();
+                if (ex != null)
+                {
+                    await context.Response.WriteAsync(ex.Error.Message);
+                }
+            });
+        });
         app.UseAuthentication();
         app.UseAuthorization();
 
